@@ -1,6 +1,9 @@
-# mis_lab_2
+# mis_labs
 
-A new Flutter project.
+LINK TO SCREENRECORDING OF LAB2:
+https://youtu.be/GsD2QLLKF7Y
+
+Flutter projects where all mobile information systems laboratory exercises are stored.
 
 ## Getting Started
 
