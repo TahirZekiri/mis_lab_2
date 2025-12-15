@@ -6,7 +6,6 @@ import 'screens/categories_screen.dart';
 import 'screens/favorites_screen.dart';
 import 'screens/reminder_settings_screen.dart';
 import 'screens/recipe_detail_screen.dart';
-import 'services/auth_service.dart';
 import 'services/favorites_service.dart';
 import 'services/fcm_service.dart';
 import 'services/meal_service.dart';
@@ -21,14 +20,8 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
 
-  final auth = AuthService();
-  try {
-    await auth.ensureSignedIn();
-  } catch (_) {}
-
   final favorites = FavoritesService();
-  await favorites.load();
-  await favorites.connectToFirestore();
+  await favorites.init();
 
   final mealService = MealService();
   final notifications = NotificationService();

@@ -81,7 +81,12 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
                 favorites.isFavorite(_meal!.idMeal) ? Icons.favorite : Icons.favorite_border,
               ),
               onPressed: () async {
-                await favorites.toggle(MealPreview.fromMeal(_meal!));
+                final ok = await favorites.toggle(MealPreview.fromMeal(_meal!));
+                if (!ok && context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Could not save favorite')),
+                  );
+                }
               },
             ),
         ],

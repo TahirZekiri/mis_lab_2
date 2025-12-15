@@ -66,7 +66,12 @@ class MealCard extends StatelessWidget {
                       right: 8,
                       child: InkResponse(
                         onTap: () async {
-                          await favorites.toggle(MealPreview.fromMeal(meal));
+                          final ok = await favorites.toggle(MealPreview.fromMeal(meal));
+                          if (!ok && context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Could not save favorite')),
+                            );
+                          }
                         },
                         radius: 20,
                         child: Container(

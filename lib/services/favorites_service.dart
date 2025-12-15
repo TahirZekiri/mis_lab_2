@@ -1,62 +1,53 @@
-import 'dart:convert';
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/meal_preview.dart';
+import 'device_id_service.dart';
 
 class FavoritesService extends ChangeNotifier {
-  static const _storageKey = 'favorite_meals';
-
-  final FirebaseAuth _auth;
   final FirebaseFirestore _firestore;
+  final DeviceIdService _deviceIdService;
+  String? _deviceId;
 
   final Map<String, MealPreview> _favoritesById = {};
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _subscription;
+  Object? _lastError;
 
   FavoritesService({
-    FirebaseAuth? auth,
     FirebaseFirestore? firestore,
-  })  : _auth = auth ?? FirebaseAuth.instance,
-        _firestore = firestore ?? FirebaseFirestore.instance;
+    DeviceIdService? deviceIdService,
+  })  : _firestore = firestore ?? FirebaseFirestore.instance,
+        _deviceIdService = deviceIdService ?? DeviceIdService();
+
+  Object? get lastError => _lastError;
 
   List<MealPreview> get favorites => _favoritesById.values.toList()
     ..sort((a, b) => a.strMeal.toLowerCase().compareTo(b.strMeal.toLowerCase()));
 
   bool isFavorite(String idMeal) => _favoritesById.containsKey(idMeal);
 
-  Future<void> load() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_storageKey);
-    if (raw == null || raw.isEmpty) return;
-    final decoded = jsonDecode(raw);
-    if (decoded is! List) return;
-
-    _favoritesById
-      ..clear()
-      ..addEntries(
-        decoded.whereType<Map>().map((e) {
-          final map = e.map((k, v) => MapEntry(k.toString(), v));
-          final preview = MealPreview.fromJson(map);
-          return MapEntry(preview.idMeal, preview);
-        }),
-      );
-    notifyListeners();
+  Future<void> init() async {
+    try {
+      _deviceId = await _deviceIdService.getOrCreate();
+      _subscribe(_deviceId!);
+      _lastError = null;
+      notifyListeners();
+    } catch (e) {
+      _lastError = e;
+      notifyListeners();
+    }
   }
 
-  Future<void> connectToFirestore() async {
-    final user = _auth.currentUser;
-    if (user == null) return;
+  void _subscribe(String deviceId) {
     _subscription?.cancel();
     _subscription = _firestore
-        .collection('users')
-        .doc(user.uid)
+        .collection('device_favorites')
+        .doc(deviceId)
         .collection('favorites')
         .snapshots()
-        .listen((snapshot) async {
+        .listen((snapshot) {
       final next = <String, MealPreview>{};
       for (final doc in snapshot.docs) {
         final preview = MealPreview.fromJson(doc.data());
@@ -67,41 +58,37 @@ class FavoritesService extends ChangeNotifier {
       _favoritesById
         ..clear()
         ..addAll(next);
+      _lastError = null;
       notifyListeners();
-      await _persist();
+    }, onError: (e) {
+      _lastError = e;
+      notifyListeners();
     });
   }
 
-  Future<void> toggle(MealPreview meal) async {
-    if (meal.idMeal.isEmpty) return;
-    final user = _auth.currentUser;
-    final docRef = user == null
-        ? null
-        : _firestore
-            .collection('users')
-            .doc(user.uid)
-            .collection('favorites')
-            .doc(meal.idMeal);
+  Future<bool> toggle(MealPreview meal) async {
+    if (meal.idMeal.isEmpty) return false;
+    try {
+      final deviceId = _deviceId ?? await _deviceIdService.getOrCreate();
+      _deviceId = deviceId;
+      final docRef = _firestore
+          .collection('device_favorites')
+          .doc(deviceId)
+          .collection('favorites')
+          .doc(meal.idMeal);
 
-    if (_favoritesById.containsKey(meal.idMeal)) {
-      _favoritesById.remove(meal.idMeal);
-      if (docRef != null) {
+      if (_favoritesById.containsKey(meal.idMeal)) {
         await docRef.delete();
-      }
-    } else {
-      _favoritesById[meal.idMeal] = meal;
-      if (docRef != null) {
+      } else {
         await docRef.set(meal.toJson());
       }
+      _lastError = null;
+      return true;
+    } catch (e) {
+      _lastError = e;
+      notifyListeners();
+      return false;
     }
-    notifyListeners();
-    await _persist();
-  }
-
-  Future<void> _persist() async {
-    final prefs = await SharedPreferences.getInstance();
-    final encoded = jsonEncode(_favoritesById.values.map((e) => e.toJson()).toList());
-    await prefs.setString(_storageKey, encoded);
   }
 
   @override
