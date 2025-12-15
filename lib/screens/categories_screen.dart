@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import '../models/category.dart';
 import '../services/meal_service.dart';
 import '../widgets/category_card.dart';
+import 'favorites_screen.dart';
 import 'meals_screen.dart';
+import 'reminder_settings_screen.dart';
 import 'recipe_detail_screen.dart';
 
 class CategoriesScreen extends StatefulWidget {
@@ -83,25 +85,37 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         title: const Text('Recipe Categories'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.favorite_outline),
+            tooltip: 'Favorites',
+            onPressed: () {
+              Navigator.pushNamed(context, FavoritesScreen.routeName);
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.notifications_outlined),
+            tooltip: 'Reminder settings',
+            onPressed: () {
+              Navigator.pushNamed(context, ReminderSettingsScreen.routeName);
+            },
+          ),
+          IconButton(
             icon: const Icon(CupertinoIcons.shuffle),
             tooltip: 'Random Recipe',
             onPressed: () async {
               try {
                 final randomMeal = await _mealService.getRandomMeal();
-                if (mounted) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => RecipeDetailScreen(mealId: randomMeal.idMeal),
-                    ),
-                  );
-                }
+                if (!context.mounted) return;
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => RecipeDetailScreen(mealId: randomMeal.idMeal),
+                  ),
+                );
               } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error loading random recipe: $e')),
-                  );
-                }
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error loading random recipe: $e')),
+                );
               }
             },
           ),

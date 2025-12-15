@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "597133353332",
+    "project_id": "mislabs-ce2c2",
+    "storage_bucket": "mislabs-ce2c2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:597133353332:android:eb38fcf4baba4738c6cc21",
+        "android_client_info": {
+          "package_name": "com.example.mislab2"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB7_2itncK4izlrXT-47Se-ktI9ofUMKYI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
+

@@ -1,7 +1,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/meal.dart';
+import '../models/meal_preview.dart';
+import '../services/favorites_service.dart';
 import '../services/meal_service.dart';
 
 class RecipeDetailScreen extends StatefulWidget {
@@ -67,9 +70,21 @@ class _RecipeDetailScreenState extends State<RecipeDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final favorites = context.watch<FavoritesService>();
     return Scaffold(
       appBar: AppBar(
         title: const Text('Recipe Details'),
+        actions: [
+          if (_meal != null)
+            IconButton(
+              icon: Icon(
+                favorites.isFavorite(_meal!.idMeal) ? Icons.favorite : Icons.favorite_border,
+              ),
+              onPressed: () async {
+                await favorites.toggle(MealPreview.fromMeal(_meal!));
+              },
+            ),
+        ],
       ),
       body: SafeArea(
         child: _isLoading
